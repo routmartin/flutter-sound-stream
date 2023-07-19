@@ -59,6 +59,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         super.init()
         self.attachPlayer()
         mAudioEngine.prepare()
+        /** add override to enhance volume **/
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.overrideOutputAudioPort(.speaker)
+        } catch {
+            print("error overriding OutputAudioPort")
+        }
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -227,6 +234,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     private func stopRecording(_ result: @escaping FlutterResult) {
         mAudioEngine.inputNode.removeTap(onBus: mRecordBus)
+        stopEngine()
         sendRecorderStatus(SoundStreamStatus.Stopped)
         result(true)
     }

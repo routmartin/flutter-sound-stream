@@ -35,7 +35,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     private var mRecordFormat: AVAudioFormat!
     
     //========= Player's vars
-    private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 16000 
+    private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 32000   // 32Khz
     private let mPlayerBus = 0
     private let mPlayerNode = AVAudioPlayerNode()
     private var mPlayerSampleRate: Double = 16000 // 16Khz
@@ -59,13 +59,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         super.init()
         self.attachPlayer()
         mAudioEngine.prepare()
-        /** add override to enhance volume **/
-        let audioSession = AVAudioSession.sharedInstance()
-        do {
-            try audioSession.overrideOutputAudioPort(.speaker)
-        } catch {
-            print("error overriding OutputAudioPort")
-        }
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -234,7 +227,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     
     private func stopRecording(_ result: @escaping FlutterResult) {
         mAudioEngine.inputNode.removeTap(onBus: mRecordBus)
-        stopEngine()
         sendRecorderStatus(SoundStreamStatus.Stopped)
         result(true)
     }
@@ -263,20 +255,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
     
     private func attachPlayer() {
-        
-        let session = AVAudioSession.sharedInstance()
-              try? session.setActive(false)
-              try! session.setCategory(
-                  .playAndRecord,
-                  options: [
-                      .defaultToSpeaker,
-                      .allowBluetooth,
-                      .allowBluetoothA2DP,
-                      .allowAirPlay
-                  ])
-              try! session.setActive(true)
-        
-        
         mPlayerOutputFormat = AVAudioFormat(commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE, channels: 1, interleaved: true)
         
         mAudioEngine.attach(mPlayerNode)

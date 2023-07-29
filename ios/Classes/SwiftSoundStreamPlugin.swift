@@ -31,7 +31,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   private let mRecordBus = 0
   private var mInputNode: AVAudioInputNode
   private var mRecordSampleRate: Double = 16000  // 16Khz
-  private var mRecordBufferSize: AVAudioFrameCount = 8192
+  private var mRecordBufferSize: AVAudioFrameCount = 1024
   private var mRecordChannel = 0
   private var mRecordSettings: [String: Int]!
   private var mRecordFormat: AVAudioFormat!
@@ -39,11 +39,11 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   private var isRecording: Bool = false
 
   //========= Player's vars
-  private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 32000  // 32Khz
+  private let PLAYER_OUTPUT_SAMPLE_RATE: Double = 16000
   private let mPlayerBus = 0
   private let mPlayerNode = AVAudioPlayerNode()
   private var mPlayerSampleRate: Double = 16000  // 16Khz
-  private var mPlayerBufferSize: AVAudioFrameCount = 8192
+  private var mPlayerBufferSize: AVAudioFrameCount = 1024
   private var mPlayerOutputFormat: AVAudioFormat!
   private var mPlayerInputFormat: AVAudioFormat!
 

@@ -60,7 +60,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     //========= Recorder's vars
     private val mRecordFormat = AudioFormat.ENCODING_PCM_16BIT
     private var mRecordSampleRate = 16000 // 16Khz
-    private var mRecorderBufferSize = 8192
+    private var mRecorderBufferSize = 1024
     private var mPeriodFrames = 8192
     private var audioData: ShortArray? = null
     private var mRecorder: AudioRecord? = null
@@ -70,7 +70,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     private var mAudioTrack: AudioTrack? = null
     private var mAudioManager: AudioManager? = null
     private var mPlayerSampleRate = 16000 // 16Khz
-    private var mPlayerBufferSize = 10240
+    private var mPlayerBufferSize = 1024
     private var mPlayerFormat: AudioFormat = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)

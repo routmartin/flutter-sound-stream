@@ -60,8 +60,8 @@ public class SoundStreamPlugin : FlutterPlugin,
     //========= Recorder's vars
     private val mRecordFormat = AudioFormat.ENCODING_PCM_16BIT
     private var mRecordSampleRate = 16000 // 16Khz
-    private var mRecorderBufferSize = 1024
-    private var mPeriodFrames = 8192
+    private var mRecorderBufferSize = 4096*2
+    private var mPeriodFrames = 4096
     private var audioData: ShortArray? = null
     private var mRecorder: AudioRecord? = null
     private var mListener: OnRecordPositionUpdateListener? = null
@@ -70,7 +70,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     private var mAudioTrack: AudioTrack? = null
     private var mAudioManager: AudioManager? = null
     private var mPlayerSampleRate = 16000 // 16Khz
-    private var mPlayerBufferSize = 1024
+    private var mPlayerBufferSize = 4096
     private var mPlayerFormat: AudioFormat = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
@@ -182,8 +182,8 @@ public class SoundStreamPlugin : FlutterPlugin,
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?,
-                                            grantResults: IntArray?): Boolean {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
+                                            grantResults: IntArray): Boolean {
         when (requestCode) {
             audioRecordPermissionCode -> {
                 if (grantResults != null) {
@@ -201,8 +201,8 @@ public class SoundStreamPlugin : FlutterPlugin,
         initAudioManager()
         mRecordSampleRate = call.argument<Int>("sampleRate") ?: mRecordSampleRate
         debugLogging = call.argument<Boolean>("showLogs") ?: false
-        mPeriodFrames = AudioRecord.getMinBufferSize(mRecordSampleRate, AudioFormat.CHANNEL_IN_MONO, mRecordFormat)
-        mRecorderBufferSize = mPeriodFrames * 2
+        // mPeriodFrames = AudioRecord.getMinBufferSize(mRecordSampleRate, AudioFormat.CHANNEL_IN_MONO, mRecordFormat)
+        // mRecorderBufferSize = mPeriodFrames * 2
         audioData = ShortArray(mPeriodFrames)
         activeResult = result
 
@@ -327,7 +327,6 @@ public class SoundStreamPlugin : FlutterPlugin,
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .setLegacyStreamType(AudioManager.STREAM_MUSIC)
                 .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                 .build()
         mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
 

@@ -60,8 +60,8 @@ public class SoundStreamPlugin : FlutterPlugin,
     //========= Recorder's vars
     private val mRecordFormat = AudioFormat.ENCODING_PCM_16BIT
     private var mRecordSampleRate = 16000 // 16Khz
-    private var mRecorderBufferSize = 4096*2
-    private var mPeriodFrames = 4096
+    private var mRecorderBufferSize = 8192
+    private var mPeriodFrames = 512 // notification period should be a multiple of the buffer size (for reponse listioner)
     private var audioData: ShortArray? = null
     private var mRecorder: AudioRecord? = null
     private var mListener: OnRecordPositionUpdateListener? = null
@@ -70,7 +70,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     private var mAudioTrack: AudioTrack? = null
     private var mAudioManager: AudioManager? = null
     private var mPlayerSampleRate = 16000 // 16Khz
-    private var mPlayerBufferSize = 4096
+    private var mPlayerBufferSize = 8192
     private var mPlayerFormat: AudioFormat = AudioFormat.Builder()
             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
@@ -317,20 +317,48 @@ public class SoundStreamPlugin : FlutterPlugin,
                 .setSampleRate(mPlayerSampleRate)
                 .build()
 
-        mPlayerBufferSize = AudioTrack.getMinBufferSize(mPlayerSampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        // mPlayerBufferSize = AudioTrack.getMinBufferSize(mPlayerSampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
 
         if (mAudioTrack?.state == AudioTrack.STATE_INITIALIZED) {
             mAudioTrack?.release()
         }
 
+        val version = android.os.Build.VERSION.SDK_INT
+        // val defaultAudioAttributes = AudioAttributes.Builder()
+        //     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        //     .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+        //     // .setUsage(AudioAttributes.USAGE_MEDIA)
+        //     .build()
+
+        // val audioAttributes = if (version > android.os.Build.VERSION_CODES.P) {
+        //     AudioAttributes.Builder()
+        //         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        //         .setUsage(AudioAttributes.USAGE_MEDIA)
+        //         // .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
+        //         .build()
+        // } else {
+        //     defaultAudioAttributes
+        // }
+        // val audioAttributes: AudioAttributes = if (version > android.os.Build.VERSION_CODES.P) {
+        //     AudioAttributes.Builder()
+        //             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        //             .setUsage(AudioAttributes.USAGE_MEDIA)
+        //             .build()
+        // } else {
+        //     AudioAttributes.Builder()
+        //             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        //             .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+        //             .build()
+        // }
         val audioAttributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setLegacyStreamType(AudioManager.STREAM_MUSIC)
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .build()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                // .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+                                .build()
         mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
 
         mAudioManager?.mode = AudioManager.MODE_NORMAL
+
 
         result.success(true)
         sendPlayerStatus(SoundStreamStatus.Initialized)
@@ -405,6 +433,9 @@ public class SoundStreamPlugin : FlutterPlugin,
             override fun onPeriodicNotification(recorder: AudioRecord) {
                 val data = audioData!!
                 val shortOut = recorder.read(data, 0, mPeriodFrames)
+                // this condistion to prevent app crash from happening in Android Devices
+                // See issues: https://github.com/CasperPas/flutter-sound-stream/issues/25
+                if (shortOut < 1) { return }
                 // https://flutter.io/platform-channels/#codec
                 // convert short to int because of platform-channel's limitation
                 val byteBuffer = ByteBuffer.allocate(shortOut * 2)

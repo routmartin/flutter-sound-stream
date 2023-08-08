@@ -357,7 +357,9 @@ public class SoundStreamPlugin : FlutterPlugin,
                                 .build()
         mAudioTrack = AudioTrack(audioAttributes, mPlayerFormat, mPlayerBufferSize, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE)
 
-        mAudioManager?.mode = AudioManager.MODE_NORMAL
+        // mAudioManager?.mode = AudioManager.MODE_NORMAL
+        mAudioManager?.setSpeakerphoneOn(false);
+        mAudioManager?.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
 
         result.success(true)

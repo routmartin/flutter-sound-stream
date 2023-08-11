@@ -61,7 +61,7 @@ public class SoundStreamPlugin : FlutterPlugin,
     private val mRecordFormat = AudioFormat.ENCODING_PCM_16BIT
     private var mRecordSampleRate = 16000 // 16Khz
     private var mRecorderBufferSize = 8192
-    private var mPeriodFrames = 512 // notification period should be a multiple of the buffer size (for reponse listioner)
+    private var mPeriodFrames = 2048 // notification period should be a multiple of the buffer size (for reponse listioner)
     private var audioData: ShortArray? = null
     private var mRecorder: AudioRecord? = null
     private var mListener: OnRecordPositionUpdateListener? = null

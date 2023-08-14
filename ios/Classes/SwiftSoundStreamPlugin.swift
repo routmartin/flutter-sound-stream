@@ -240,6 +240,18 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
   }
   private func startRecording(_ result: @escaping FlutterResult) {
+    let session = AVAudioSession.sharedInstance()
+      try? session.setActive(false)
+      try? session.setCategory(
+        .playAndRecord,
+
+        options: [
+          .allowBluetooth,
+          .allowBluetoothA2DP,
+          .allowAirPlay,
+        ])
+      try? session.overrideOutputAudioPort(.none)
+      try? session.setActive(true)
     startEngine()
     startRecorder()
     sendRecorderStatus(SoundStreamStatus.Playing)
@@ -366,19 +378,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
   private func startPlayer(_ result: @escaping FlutterResult) {
     do {
-      let session = AVAudioSession.sharedInstance()
-      try? session.setActive(false)
-      try? session.setCategory(
-        .playAndRecord,
-
-        options: [
-          .allowBluetooth,
-          .allowBluetoothA2DP,
-          .allowAirPlay,
-        ])
-      try? session.overrideOutputAudioPort(.none)
-      try? session.setActive(true)
-
       startEngine()
       if !mPlayerNode.isPlaying {
         print("player report:\(mPlayerNode.description)")

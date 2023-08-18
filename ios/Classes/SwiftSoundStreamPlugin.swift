@@ -59,12 +59,11 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   init(_ channel: FlutterMethodChannel, registrar: FlutterPluginRegistrar) {
     self.channel = channel
     self.registrar = registrar
-    self.mInputNode = mAudioEngine.inputNode
-    self.mRecordMixer = AVAudioMixerNode()
+    mInputNode = mAudioEngine.inputNode
 
     super.init()
-    self.attachPlayer()
-    self.initEngine()
+    attachPlayer()
+    initEngine()
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -239,19 +238,20 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
       }
     }
   }
+
   private func startRecording(_ result: @escaping FlutterResult) {
     let session = AVAudioSession.sharedInstance()
-      try? session.setActive(false)
-      try? session.setCategory(
-        .playAndRecord,
+    try? session.setActive(false)
+    try? session.setCategory(
+      .playAndRecord,
 
-        options: [
-          .allowBluetooth,
-          .allowBluetoothA2DP,
-          .allowAirPlay,
-        ])
-      try? session.overrideOutputAudioPort(.none)
-      try? session.setActive(true)
+      options: [
+        .allowBluetooth,
+        .allowBluetoothA2DP,
+        .allowAirPlay,
+      ])
+    try? session.overrideOutputAudioPort(.none)
+    try? session.setActive(true)
     startEngine()
     startRecorder()
     sendRecorderStatus(SoundStreamStatus.Playing)
@@ -270,8 +270,8 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
     let ratio: Float = Float(inputFormat.sampleRate) / Float(mRecordFormat.sampleRate)
     input.installTap(onBus: mRecordBus, bufferSize: mRecordBufferSize, format: inputFormat) {
-      (buffer, time) -> Void in
-      let inputCallback: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+      buffer, _ in
+      let inputCallback: AVAudioConverterInputBlock = { _, outStatus in
         outStatus.pointee = .haveData
         return buffer
       }
@@ -326,62 +326,56 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
           details: nil))
       return
     }
-    let useSpeaker = argsArr["value"] as? Bool ?? false
 
-    setUsePhoneSpeaker(useSpeaker)
+    let useSpeaker = argsArr["value"] as? Bool ?? false
+    let session = AVAudioSession.sharedInstance()
+
+    do {
+      if mAudioEngine.isRunning {
+        stopRecorder()
+        mPlayerNode.stop()
+        mPlayerNode.reset()
+      }
+
+      print("useSpeaker : \(useSpeaker)")
+
+      if useSpeaker {
+        try session.setCategory(.playAndRecord, mode: .default, options: .defaultToSpeaker)
+        try session.overrideOutputAudioPort(.speaker)
+      } else {
+        try session.overrideOutputAudioPort(.none)
+      }
+      try? session.setActive(true)
+
+      print("currentRout: \(session.currentRoute.inputs)")
+      print("currentRout: \(session.currentRoute.outputs)")
+
+      attachPlayer()
+      startRecorder()
+      startEngine()
+      mPlayerNode.play()
+
+    } catch {
+      print("useSpeaker: \(error)")
+    }
+
     sendResult(result, true)
   }
 
-  private func setUsePhoneSpeaker(_ enabled: Bool) {
-
-    if mPlayerNode.isPlaying {
-      mPlayerNode.stop()
-      mInputNode.reset()
-      sendPlayerStatus(SoundStreamStatus.Stopped)
-    }
-
-    let session = AVAudioSession.sharedInstance()
-    try? session.setActive(false)
-    try? session.setCategory(
-      .playAndRecord,
-      options: [
-        .allowBluetooth,
-        .allowBluetoothA2DP,
-        .allowAirPlay,
-      ])
-
-    if enabled {
-      try? session.overrideOutputAudioPort(.speaker)
-      isUsingSpeaker = enabled
-    } else {
-      try? session.overrideOutputAudioPort(.none)
-
-    }
-
-    try? session.setActive(true)
-    if !mPlayerNode.isPlaying {
-      print("player report:\(mPlayerNode.description)")
-      try! mPlayerNode.play()
-    }
-  }
-
   private func attachPlayer() {
-
     mPlayerOutputFormat = AVAudioFormat(
       commonFormat: AVAudioCommonFormat.pcmFormatFloat32, sampleRate: PLAYER_OUTPUT_SAMPLE_RATE,
       channels: 1, interleaved: true)
 
     mAudioEngine.attach(mPlayerNode)
-    mAudioEngine.connect(mPlayerNode, to: mAudioEngine.outputNode, format: mPlayerOutputFormat)
-
+    mAudioEngine.connect(mPlayerNode, to: mAudioEngine.mainMixerNode, format: mPlayerOutputFormat)
   }
 
   private func startPlayer(_ result: @escaping FlutterResult) {
     do {
       startEngine()
       if !mPlayerNode.isPlaying {
-        print("player report:\(mPlayerNode.description)")
-        try! mPlayerNode.play()
+        try? mPlayerNode.play()
       }
     } catch {
       print("player error: \(error)")
@@ -393,7 +387,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     if mPlayerNode.isPlaying {
       mPlayerNode.stop()
       mPlayerNode.reset()
-
     }
     sendPlayerStatus(SoundStreamStatus.Stopped)
     result(true)
@@ -433,14 +426,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   private func convertBufferFormat(
     _ buffer: AVAudioPCMBuffer, from: AVAudioFormat, to: AVAudioFormat
   ) -> AVAudioPCMBuffer {
-
     let formatConverter = AVAudioConverter(from: from, to: to)
     let ratio: Float = Float(from.sampleRate) / Float(to.sampleRate)
     let pcmBuffer = AVAudioPCMBuffer(
       pcmFormat: to, frameCapacity: UInt32(Float(buffer.frameCapacity) / ratio))!
 
-    var error: NSError? = nil
-    let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
+    var error: NSError?
+    let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
       outStatus.pointee = .haveData
       return buffer
     }
@@ -483,5 +475,4 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
     return audioBuffer
   }
-
 }

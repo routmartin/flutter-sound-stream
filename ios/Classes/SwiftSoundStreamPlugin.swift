@@ -63,7 +63,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     self.mRecordMixer = AVAudioMixerNode()
 
     super.init()
-//    self.attachPlayer()
+   self.attachPlayer()
     self.initEngine()
   }
 
@@ -240,7 +240,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
   }
   private func startRecording(_ result: @escaping FlutterResult) {
-    attachPlayer()
+    // attachPlayer()
     let session = AVAudioSession.sharedInstance()
       try? session.setActive(false)
       try? session.setCategory(

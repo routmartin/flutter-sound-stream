@@ -108,6 +108,61 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   }
 
   /** ======== Plugin methods ======== **/
+    
+    func routeChangeNotificationListener() {
+        // Get the default notification center instance.
+        let nc = NotificationCenter.default
+        nc.addObserver(self,
+                       selector: #selector(handleRouteChange),
+                       name: AVAudioSession.routeChangeNotification,
+                       object: nil)
+    }
+    
+    func removeChangeRouteListener(){
+        let nc = NotificationCenter.default
+        nc.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: nil)
+    }
+
+
+    @objc func handleRouteChange(notification: Notification) {
+        let currentRoute = AVAudioSession.sharedInstance().currentRoute
+        let usingSpeaker = currentRoute.outputs.contains { $0.portType == .builtInSpeaker }
+        guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+        let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+                return
+            }
+            
+            switch reason {
+            case .newDeviceAvailable, .oldDeviceUnavailable:
+                // Reconnect or reconfigure the AVAudioEngine as needed
+                break
+            case .override,.categoryChange:
+                isUsingSpeaker = usingSpeaker
+                if mPlayerNode.isPlaying {
+                    mPlayerNode.stop()
+                }else{
+                    return;
+                }
+                  
+                  if isRecording {
+                    stopRecorder()
+                }
+                  
+                // delayed 1 second
+                sleep(1)
+
+                startRecorder()
+                startEngine()
+
+                if !mPlayerNode.isPlaying {
+                  print("player report:\(mPlayerNode.description)")
+                  try? mPlayerNode.play()
+                }
+                break
+            default:
+                break
+            }
+    }
 
   private func checkAndRequestPermission(completion callback: @escaping ((Bool) -> Void)) {
     if hasPermission {
@@ -242,6 +297,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   private func startRecording(_ result: @escaping FlutterResult) {
     // attachPlayer()
     let session = AVAudioSession.sharedInstance()
+      let usingSpeaker = session.currentRoute.outputs.contains { $0.portType == .builtInSpeaker }
       try? session.setActive(false)
       try? session.setCategory(
         .playAndRecord,
@@ -251,8 +307,13 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
           .allowBluetoothA2DP,
           .allowAirPlay,
         ])
-      try? session.overrideOutputAudioPort(.none)
+      if(usingSpeaker){
+          try? session.overrideOutputAudioPort(.speaker)
+      }else{
+          try? session.overrideOutputAudioPort(.none)
+      }
       try? session.setActive(true)
+    routeChangeNotificationListener()
     startEngine()
     startRecorder()
     sendRecorderStatus(SoundStreamStatus.Playing)
@@ -295,6 +356,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
   }
 
   private func stopRecording(_ result: @escaping FlutterResult) {
+    removeChangeRouteListener()
     stopRecorder()
     sendRecorderStatus(SoundStreamStatus.Stopped)
     result(true)

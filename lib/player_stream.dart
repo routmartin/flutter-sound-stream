@@ -45,6 +45,9 @@ class PlayerStream {
   Future<dynamic> usePhoneSpeaker(bool value) => _methodChannel
       .invokeMethod("usePhoneSpeaker", <String, dynamic>{"value": value});
 
+  Future<dynamic> isUsingSpeaker() =>
+      _methodChannel.invokeMethod("usingSpeaker");
+
   void _eventListener(dynamic event) {
     if (event == null) return;
     final String eventName = event["name"] ?? "";

@@ -61,9 +61,9 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     self.registrar = registrar
     self.mInputNode = mAudioEngine.inputNode
     self.mRecordMixer = AVAudioMixerNode()
-
+//
     super.init()
-   self.attachPlayer()
+    self.attachPlayer()
     self.initEngine()
   }
 
@@ -137,25 +137,24 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
                 // Reconnect or reconfigure the AVAudioEngine as needed
                 break
             case .override,.categoryChange:
+                print("listennn change \(AVAudioSession.sharedInstance().category)")
                 isUsingSpeaker = usingSpeaker
                 if mPlayerNode.isPlaying {
                     mPlayerNode.stop()
-                }else{
-                    return;
                 }
                   
-                  if isRecording {
+                if isRecording {
                     stopRecorder()
                 }
                   
                 // delayed 1 second
-                sleep(1)
-
+//                sleep(1)
+                
                 startRecorder()
                 startEngine()
 
                 if !mPlayerNode.isPlaying {
-                  print("player report:\(mPlayerNode.description)")
+                    print("player report1:\(mPlayerNode.description) \(mAudioEngine.outputNode)")
                   try? mPlayerNode.play()
                 }
                 break
@@ -215,7 +214,7 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
   private func initEngine() {
     mAudioEngine.prepare()
-    startEngine()
+//    startEngine()
   }
 
   private func startEngine() {
@@ -295,7 +294,6 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
     }
   }
   private func startRecording(_ result: @escaping FlutterResult) {
-    // attachPlayer()
     let session = AVAudioSession.sharedInstance()
       let usingSpeaker = session.currentRoute.outputs.contains { $0.portType == .builtInSpeaker }
       try? session.setActive(false)
@@ -313,10 +311,12 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
           try? session.overrideOutputAudioPort(.none)
       }
       try? session.setActive(true)
-    routeChangeNotificationListener()
-    startEngine()
+    sleep(1)
     startRecorder()
+    startEngine()
     sendRecorderStatus(SoundStreamStatus.Playing)
+    routeChangeNotificationListener()
+    print("start recordingggg")
     result(true)
   }
 
@@ -421,15 +421,14 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
         try? session.overrideOutputAudioPort(.none)
       }
     try? session.setActive(true)
-      
     // delayed 1 second
-    sleep(1)
+//    sleep(1)
 
     startRecorder()
     startEngine()
 
     if !mPlayerNode.isPlaying {
-      print("player report:\(mPlayerNode.description)")
+      print("player report2:\(mPlayerNode.description) \(mAudioEngine.outputNode)")
       try! mPlayerNode.play()
     }
   }
@@ -447,9 +446,9 @@ public class SwiftSoundStreamPlugin: NSObject, FlutterPlugin {
 
   private func startPlayer(_ result: @escaping FlutterResult) {
     do {
-      startEngine()
+//      startEngine()
       if !mPlayerNode.isPlaying {
-        print("player report:\(mPlayerNode.description)")
+        print("player report3:\(mPlayerNode.description) \(mAudioEngine.outputNode)")
         try! mPlayerNode.play()
       }
     } catch {
